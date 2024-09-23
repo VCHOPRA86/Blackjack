@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Blackjack Game</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+        <!-- Site favicon -->
+        <link rel="shortcut icon"  href="{{ url_for('static', filename='images/favicon.ico') }}" />
+        <!-- Bootstrap Icons CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+        <style>
+
+             /* Use full viewport height */
+             html, body {
+
+                        margin: 0;
+                        padding: 0;
+
+            /* Basic reset */
+
+
+
+            /* Body styling */
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              background-image: url(static/images/bg/background.png);
+              background-size: cover; /* Ensure the image covers the entire background */
+              background-position: center center; /* Center the image horizontally and vertically */
+              width: 100%;
+              height: 100%;
+              margin: 0;
+              padding: 10px;
+              color: #333;
+            }
+
+            .text-center.msg-bid {
+
+                color: #ffffff;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="game-container">
+            {% if current_user.is_authenticated %}
+            <!-- User and Balance Section -->
+            <div class="user-balance-container">
+                <div class="current-user">
+                    <h3>Hello, {{ current_user.username }}!</h3>
+                </div>
+
+                <div class="current-balance">
+                    <h3>Current Balance: £{{ game_state.balance }}</h3>
+                </div>
+            </div>
+
+            {% endif %}
+
+            <!-- Authentication Buttons -->
+            <div class="text-center">
+                {% if not current_user.is_authenticated %}
+                <div class="alert alert-warning">
+                    Please login or signup to play the game.
+                </div>
+                <!-- Trigger Button for Login/Signup Modal -->
+                <button id="authButton" type="button" class="btn btn-secondary" data-toggle="modal" data-target="#loginSignupModal">
+                    Login / Signup
+                </button>
+                {% else %}
+                <!-- My Dashboard Button -->
+                <a id="dashboardButton" href="/dashboard" class="btn btn-info">My Dashboard</a>
+                <!-- Logout Button -->
+                <form action="{{ url_for('logout') }}" method="post" class="d-inline-block">
+                    <button type="submit" class="btn btn-danger">Logout</button>
+                </form>
+                {% endif %}
+                <!-- Rules Button -->
+                <button id="rulesButton" type="button" class="btn btn-primary" data-toggle="modal" data-target="#rulesModal">
+                    Game Rules
+                </button>
+            </div>
+
+            <!-- Login/Signup Modal -->
+            <div class="modal fade" id="loginSignupModal" tabindex="-1" aria-labelledby="loginSignupLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="loginSignupLabel">Login or Signup</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <!-- Nav tabs for switching between Login and Signup -->
+                            <ul class="nav nav-tabs" id="authTab" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="login-tab" data-toggle="tab" href="#login" role="tab" aria-controls="login" aria-selected="true">Login</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="signup-tab" data-toggle="tab" href="#signup" role="tab" aria-controls="signup" aria-selected="false">Signup</a>
+                                </li>
+                            </ul>
+
+                            <!-- Container for Success Messages -->
+                            <div id="authSuccess" class="alert alert-success" style="display: none;"></div>
+
+                            <!-- Container for Error Messages -->
+                            <div id="authError" class="alert alert-danger mt-3" style="display: none;"></div>
+
+                            <div class="tab-content">
+                                <!-- Login Form -->
+                                <div class="tab-pane fade show active" id="login" role="tabpanel" aria-labelledby="login-tab">
+                                    <form action="#" method="post" class="mt-3" id="authForm">
+                                        <input type="hidden" name="action" value="login" />
+                                        <!-- Hidden field to specify login action -->
+                                        <div class="form-group">
+                                            <label for="loginEmail">Email address</label>
+                                            <input type="email" class="form-control" id="loginEmail" name="email" required />
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="loginPassword">Password</label>
+                                            <input type="password" class="form-control" id="loginPassword" name="password" required />
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Login</button>
+                                    </form>
+                                </div>
+
+                                <!-- Signup Form -->
+                                <div class="tab-pane fade" id="signup" role="tabpanel" aria-labelledby="signup-tab">
+                                    <form action="#" method="post" class="mt-3" id="authFormSignup">
+                                        <input type="hidden" name="action" value="signup" />
+                                        <!-- Hidden field to specify signup action -->
+                                        <div class="form-group">
+                                            <label for="signupUsername">Username</label>
+                                            <input type="text" class="form-control" id="signupUsername" name="username" required />
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="signupEmail">Email address</label>
+                                            <input type="email" class="form-control" id="signupEmail" name="email" required />
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="signupPassword">Password</label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control" id="signupPassword" name="password" required />
+                                                <span class="input-group-text" id="toggleSignupPassword">
+                                                    <i class="bi bi-eye" id="toggleIconSignup"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="signupConfirmPassword">Confirm Password</label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control" id="signupConfirmPassword" name="confirm_password" required />
+                                                <span class="input-group-text" id="toggleSignupConfirmPassword">
+                                                    <i class="bi bi-eye" id="toggleIconSignupConfirm"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Signup</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal for Game Over -->
+            <div class="modal fade" id="gameOverModal" tabindex="-1" aria-labelledby="gameOverLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="gameOverLabel">Game Over</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            Looks like the house won this round, and your balance is at £0. But hey, you’re not out of luck! Click below to restart the game and we’ll top up your account with a cool £1000. Ready for another go?
+                        </div>
+                        <div class="modal-footer">
+                            <form action="{{ url_for('new_game') }}" method="POST">
+                                <button type="submit" class="btn btn-primary">Reset Balance</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rules Modal -->
+            <div class="modal fade" id="rulesModal" tabindex="-1" aria-labelledby="rulesModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="rulesModalLabel">Blackjack Game Rules</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <h6>Objective</h6>
+                            <p>The goal of Blackjack is to beat the dealer's hand without going over 21. Face cards are worth 10 points, aces are worth 1 or 11 points, and all other cards are worth their face value.</p>
+                            <h6>Gameplay</h6>
+                            <p>Each player is dealt two cards, and the dealer is also dealt two cards (one face up and one face down).</p>
+                            <h6>Winning</h6>
+                            <p>
+                                If a player's hand exceeds 21 points, they "bust" and lose their bet. If the dealer busts, player wins. If neither the player nor the dealer busts, the hand closest to 21 wins. If the player and dealer have
+                                the same hand value, it is a "push" and the player’s bet is returned.
+                            </p>
+                            <h6>Blackjack</h6>
+                            <p>
+                                If a player's initial two cards are an ace and a 10-value card, this is called a "Blackjack" and it beats any other hand, except another Blackjack. If both the player and dealer have a Blackjack, it is a
+                                push.
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game UI -->
+            <div class="row">
+                <div class="col-md-4">
+                    <h2>Player's Hand</h2>
+                    <div class="d-flex flex-wrap justify-content-center">
+                        {% for card_image in game_state.player_hand %}
+                        <img src="{{ card_image }}" alt="Card" class="img-fluid mx-1 my-2" />
+                        {% endfor %}
+                    </div>
+                    <!-- Display Player Value Only When Game Is Active -->
+                    {% if game_state.is_game_active %}
+                    <p>Player Value: {{ game_state.player_value }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Result Display -->
+                <div class="col-md-4 logo-background">
+                    {% if game_state.result and game_state.game_over %}
+                    <div class="text-center my-4 results">
+                        <img src="{{ game_state.result }}" alt="Result" class="img-fluid" style="max-width: 200px;" />
+                        {% if game_state.result == "/static/images/results/dealer-busts.png" %}
+                        <div class="alert alert-success mt-3">
+                            The dealer busted! You won £{{ game_state.winnings }}!
+                        </div>
+                        {% elif game_state.result == "/static/images/results/player-wins.png" %}
+                        <div class="alert alert-success mt-3">
+                            You won £{{ game_state.winnings }}!
+                        </div>
+                        {% elif game_state.result == "/static/images/results/blackjack.png" %}
+                        <div class="alert alert-success mt-3">
+                            Blackjack won £{{ game_state.winnings }}!
+                        </div>
+                        {% elif game_state.result == "/static/images/results/push.png" %}
+                        <div class="alert alert-info mt-3">
+                            It's a tie! You keep your bet of £{{ game_state.bet }}.
+                        </div>
+                        {% elif game_state.result == "/static/images/results/dealer-wins.png" %}
+                        <div class="alert alert-danger mt-3">
+                            You lost your bet.
+                        </div>
+                        {% elif game_state.result == "/static/images/results/player-busts.png" %}
+                        <div class="alert alert-danger mt-3">
+                            You lost your bet.
+                        </div>
+                        {% elif game_state.result == "/static/images/results/blackjack-dealer.png" %}
+                        <div class="alert alert-danger mt-3">
+                            Dealer Blackjack.
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- End of Result Display -->
+
+                <div class="col-md-4">
+                    <h2>Dealer's Hand</h2>
+                    <div class="d-flex flex-wrap justify-content-center">
+                        {% for card_image in game_state.dealer_hand %}
+                        <img src="{{ card_image }}" alt="Card" class="img-fluid mx-1 my-2" />
+                        {% endfor %}
+                    </div>
+                    {% if game_state.dealer_value is not none %}
+                    <p class="text-center">Dealer Value: {{ game_state.dealer_value }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if game_state.game_over %}
+            <div class="alert alert-warning text-center">
+                The game is over. Please start a new game to place a bet.
+            </div>
+            {% else %} {% if game_state.bet == 0 and not game_state.is_game_active %}
+            <!--
+            <div class="alert alert-warning text-center">
+                Please place a bet before starting the game.
+            </div>
+            -->
+            {% endif %}
+
+            <div class="container">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                    <div class="flash-msg-{{ category }} alert-dismissible" role="alert">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %} {% endwith %}
+
+                <div class="text-center">
+                    <h2 class="text-center">Place Your Bet</h2>
+                    {% if current_user.is_authenticated %}
+                    <div class="text-center msg-bid">
+                        Please place a bid to start the game.
+                    </div>
+                    {% endif %}
+                    <div class="container">
+                        <div class="row justify-content-center bet-btn" role="group" aria-label="Bet Buttons">
+                            {% if not current_user.is_authenticated %}
+                            <form action="{{ url_for('set_bet', amount=10) }}" method="post" class="d-inline">
+                                <button type="submit" class="btn chip-btn" disabled>
+                                    <img src="{{ url_for('static', filename='images/chips/chip-10.png') }}" alt="Chip 10" />
+                                </button>
+                            </form>
+                            <form action="{{ url_for('set_bet', amount=20) }}" method="post" class="d-inline">
+                                <button type="submit" class="btn chip-btn" disabled>
+                                    <img src="{{ url_for('static', filename='images/chips/chip-20.png') }}" alt="Chip 20" />
+                                </button>
+                            </form>
+                            <form action="{{ url_for('set_bet', amount=50) }}" method="post" class="d-inline">
+                                <button type="submit" class="btn chip-btn" disabled>
+                                    <img src="{{ url_for('static', filename='images/chips/chip-50.png') }}" alt="Chip 50" />
+                                </button>
+                            </form>
+                            <form action="{{ url_for('set_bet', amount=100) }}" method="post" class="d-inline">
+                                <button type="submit" class="btn chip-btn" disabled>
+                                    <img src="{{ url_for('static', filename='images/chips/chip-100.png') }}" alt="Chip 100" />
+                                </button>
+                            </form>
+                            {% else %}
+                            <form action="{{ url_for('set_bet', amount=10) }}" method="post" class="d-inline">
+                                <button type="submit" class="btn chip-btn">
+                                    <img src="{{ url_for('static', filename='images/chips/chip-10.png') }}" alt="Chip 10" />
+                                </button>
+                            </form>
+                            <form action="{{ url_for('set_bet', amount=20) }}" method="post" class="d-inline">
+                                <button type="submit" class="btn chip-btn">
+                                    <img src="{{ url_for('static', filename='images/chips/chip-20.png') }}" alt="Chip 20" />
+                                </button>
+                            </form>
+                            <form action="{{ url_for('set_bet', amount=50) }}" method="post" class="d-inline">
+                                <button type="submit" class="btn chip-btn">
+                                    <img src="{{ url_for('static', filename='images/chips/chip-50.png') }}" alt="Chip 50" />
+                                </button>
+                            </form>
+                            <form action="{{ url_for('set_bet', amount=100) }}" method="post" class="d-inline">
+                                <button type="submit" class="btn chip-btn">
+                                    <img src="{{ url_for('static', filename='images/chips/chip-100.png') }}" alt="Chip 100" />
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <h2 class="text-center">Current Bet: £{{ game_state.bet }}</h2>
+
+                <div class="text-center my-4">
+                    <!-- Display action buttons based on game state -->
+                    {% if not game_state.is_game_active %}
+                    <!-- Only show Start Game if the game is not active -->
+                    <form action="{{ url_for('start_game') }}" method="post">
+                        <button type="submit" onclick="playButtonSound();" class="btn btn-success btn-lg" {% if not game_state.is_bet_placed %}disabled{% endif %}>
+                            Start Game
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <!-- Display action buttons based on game state -->
+                    {% if current_user.is_authenticated and game_state.is_game_active and not game_state.game_over %}
+                    <!-- Show Hit and Stand buttons if the game is active and not over -->
+                    <!-- Hit Button -->
+                    <form action="{{ url_for('hit') }}" method="post" class="d-inline-block">
+                        <button type="submit" onclick="playButtonSound();" class="btn btn-warning btn-lg mx-2">Hit</button>
+                    </form>
+
+                    <!-- Stand Button -->
+                    <form action="{{ url_for('stand') }}" method="post" class="d-inline-block">
+                        <button type="submit" class="btn btn-danger btn-lg mx-2">Stand</button>
+                    </form>
+                    {% endif %}
+
+                    <!-- Button Row -->
+                    <div class="d-flex justify-content-center mt-3">
+                        <!-- Leaderboard Button -->
+                        <a href="{{ url_for('leaderboard') }}" class="btn btn-primary btn-lg mx-2">
+                            View Leaderboard
+                        </a>
+                    </div>
+                </div>
+
+                {% if game_state.game_over %}
+                <div class="text-center mt-4">
+                    <!-- New Game Button -->
+                    <form action="{{ url_for('new_game') }}" method="post" class="d-inline-block">
+                        <button type="submit" class="btn btn-success btn-lg mx-2">New Game</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Bootstrap JS and dependencies -->
+        <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+        
+        <script>
+
+                    document.addEventListener('DOMContentLoaded', function() {
+                        if ({{ game_state.balance }} <= 0 && {{ game_state.game_over|tojson }}) {
+                            $('#gameOverModal').modal('show');
+                        }
+                    });
+
+                    $(document).ready(function() {
+                        $('#authForm, #authFormSignup').on('submit', function(event) {
+                    event.preventDefault(); // Prevent the form from submitting.
+
+                    var formData = $(this).serialize(); // Serialize the form data
+
+                    $.ajax({
+                        type: 'POST',
+                        url: '/auth',  // Endpoint URL '/auth'
+                        data: formData,
+                        success: function(response) {
+                            if (response.status === 'success') {
+                                // Display the success message
+                                $('#authSuccess').text(response.message).show(); // Success message
+                                setTimeout(function() {
+                                            location.reload();
+                                        }, 0);
+
+                                // Change the button text to "My Dashboard"
+                                $('#authButton').text('My Dashboard');
+
+                                // Optionally, change the button behavior to redirect to the dashboard
+                                $('#authButton').off('click'); // Remove any existing click handlers
+                                $('#authButton').on('click', function() {
+
+                                });
+
+                                // Close the modal
+                                $('#loginSignupModal').modal('hide');
+
+                                // Optionally, you can redirect the user immediately to the dashboard
+                                // window.location.href = '/dashboard';
+                            } else {
+                                // Show specific error message returned by server
+                                $('#authError').text(response.message).show();
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            // Handle server errors
+                            $('#authError').text('An error occurred: ' + error).show();
+                        }
+                    });
+                });
+            });
+
+
+            $(document).ready(function() {
+                {% if user %}
+                    // If the user is logged in, show the "My Dashboard" button
+                    $('#authButton').text('My Dashboard');
+                    $('#authButton').on('click', function() {
+                        window.location.href = '/dashboard'; // Redirect to dashboard
+                    });
+                {% endif %}
+            });
+
+             // sound files
+                    let betSound = new Audio('{{ url_for('static', filename='sounds/bet-sound.ogg') }}');
+                    let winSound = new Audio('{{ url_for('static', filename='sounds/win-sound.ogg') }}');
+                    let loseSound = new Audio('{{ url_for('static', filename='sounds/lose-sound.ogg') }}');
+                    let pushSound = new Audio('{{ url_for('static', filename='sounds/push-sound.ogg') }}');
+                    let blackjackSound = new Audio('{{ url_for('static', filename='sounds/blackjack-sound.ogg') }}');
+                    let buttonSound = new Audio('{{ url_for('static', filename='sounds/card-shuffle.ogg') }}');
+                    let buttonClickSound = new Audio('{{ url_for('static', filename='sounds/button-click.ogg') }}');
+
+                    // Function to play bet sound
+                    function playBetSound() {
+                        betSound.play();
+                    }
+
+                    // Function to play win sound
+                    function playWinSound() {
+                        winSound.play();
+                    }
+
+                    // Function to play lose sound
+                    function playLoseSound() {
+                        loseSound.play();
+                    }
+
+                    // Function to play lose sound
+                    function playPushSound() {
+                        pushSound.play();
+                    }
+
+                    // Function to play lose sound
+                    function playBlackjackSound() {
+                        blackjackSound.play();
+                    }
+
+                    // Function to play button click sound
+                    function playButtonClickSound() {
+                        buttonClickSound.play();
+                    }
+
+                      // Function to play sound for Hit, Start game buttons
+                    function playButtonSound() {
+                        var buttonSound = new Audio("{{ url_for('static', filename='sounds/card-shuffle.ogg') }}");
+                        buttonSound.play();
+                    }
+
+                    // Add event listeners
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Play sound when placing a bet
+                        document.querySelectorAll('.bet-btn button').forEach(function(button) {
+                            button.addEventListener('click', playBetSound);
+                        });
+
+                       // Play sound for win/lose
+                        {% if game_state.result == '/static/images/results/player-wins.png' %}
+                            playWinSound();
+                        {% elif game_state.result == '/static/images/results/dealer-wins.png' %}
+                            playLoseSound();
+                        {% elif game_state.result == '/static/images/results/dealer-busts.png' %}
+                            playWinSound();
+                        {% elif game_state.result == '/static/images/results/player-busts.png' %}
+                            playLoseSound();
+                        {% elif game_state.result == '/static/images/results/push.png' %}
+                            playPushSound();
+                        {% elif game_state.result == '/static/images/results/push.png' %}
+                            playPushSound();
+                        {% elif game_state.result == '/static/images/results/blackjack.png' %}
+                            playBlackjackSound();
+                        {% elif game_state.result == '/static/images/results/blackjack-dealer.png' %}
+                            playLoseSound();
+                        {% endif %}
+
+                        // Play sound for button clicks
+                        document.querySelectorAll('button').forEach(function(button) {
+                            button.addEventListener('click', playButtonClickSound);
+                        });
+                    });
+
+                  // Real-time password match validation
+            document.getElementById('signupConfirmPassword').addEventListener('input', function() {
+                var signupPassword = document.getElementById('signupPassword').value;
+                var signupConfirmPassword = document.getElementById('signupConfirmPassword').value;
+                var feedback = document.getElementById('passwordFeedback');
+
+                if (signupPassword !== '' && signupPassword !== signupConfirmPassword) {
+                    feedback.textContent = 'Passwords do not match.';
+                } else {
+                    feedback.textContent = '';
+                }
+            });
+
+            // Prevent form submission if passwords do not match
+            document.getElementById('authFormSignup').addEventListener('submit', function(event) {
+                var signupPassword = document.getElementById('signupPassword').value;
+                var signupConfirmPassword = document.getElementById('signupConfirmPassword').value;
+
+                if (signupPassword !== signupConfirmPassword) {
+                    alert('New password and confirmation do not match.');
+                    event.preventDefault();
+                }
+            });
+
+            // Toggle password visibility for individual fields
+            function togglePasswordVisibility(fieldId, iconId) {
+                var passwordInput = document.getElementById(fieldId);
+                var eyeIcon = document.getElementById(iconId);
+
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                } else {
+                    passwordInput.type = 'password';
+                }
+
+                // Toggle icon
+                if (eyeIcon.classList.contains('bi-eye')) {
+                    eyeIcon.classList.remove('bi-eye');
+                    eyeIcon.classList.add('bi-eye-slash');
+                } else {
+                    eyeIcon.classList.remove('bi-eye-slash');
+                    eyeIcon.classList.add('bi-eye');
+                }
+            }
+
+            // Add event listeners to toggle buttons
+            document.getElementById('toggleSignupPassword').addEventListener('click', function() {
+                togglePasswordVisibility('signupPassword', 'toggleIconSignup');
+            });
+
+            document.getElementById('toggleSignupConfirmPassword').addEventListener('click', function() {
+                togglePasswordVisibility('signupConfirmPassword', 'toggleIconSignupConfirm');
+            });
+        </script>
+    </body>
+</html>
